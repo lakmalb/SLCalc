@@ -1,0 +1,82 @@
+.container {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+h2,
+h4 {
+  text-align: center;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.input-row input {
+  width: 50%;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.allowance-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.allowance-group input[type="number"] {
+  width: 40%;
+  margin-right: 10px;
+}
+
+.allowance-group label {
+  margin-right: 5px;
+}
+
+.allowance-group .btn-remove {
+  margin-left: 10px;
+  color: red;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.btn-add,
+.btn-calculate {
+  padding: 5px 15px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-add:hover,
+.btn-calculate:hover {
+  background-color: #0056b3;
+}
+
+.results table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.results table th,
+.results table td {
+  border: 1px solid #ccc;
+  padding: 5px;
+  text-align: left;
+}
+
+.results table th {
+  background-color: #f0f0f0;
+}
