@@ -13,6 +13,15 @@ async function fetchLKRRate() {
   }
 }
 
+function ToggleSettings(){
+  var x = document.getElementById("SettingsDiv");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+
 function calculateAPIT(taxableIncome) {
   let apit = 0;
 
@@ -43,24 +52,47 @@ function convertToLKR() {
   }
 }
 
+function updatePeggedAllowance(){
+
+  var lkrFromUsd = document.getElementById("lkrRate").value||200;
+  document.querySelectorAll(".allowance").forEach(function (allowanceInput) {
+    if (allowanceInput.dataset.type === "p") {
+      let basicSalary = parseFloat(document.getElementById("basicSalary").value) || 0;
+      let baseRate = parseFloat(document.getElementById("baseRate").value) ||200;
+      let peggedAllowance = (basicSalary*((lkrFromUsd-baseRate)/baseRate));
+      peggedAllowance= (peggedAllowance < 0? 0: peggedAllowance); 
+      allowanceInput.value = peggedAllowance.toFixed(0);
+    }
+  });
+}
+
 // Function to calculate forward values (like EPF, ETF, etc.)
 function calculate() {
+  updatePeggedAllowance();
+  queryOutput = "?";
   let allowances = 0;
   let taxableAllowance = 0;
-  let basicSalary = parseFloat(document.getElementById("basicSalary").value);
+  let basicSalary = parseFloat(document.getElementById("basicSalary").value) || 0;
+  queryOutput += "b="+basicSalary;
+  let allowanceCount = 1;
   document.querySelectorAll(".allowance").forEach(function (allowanceInput) {
     let allowanceValue = parseFloat(allowanceInput.value) || 0;
     const isTaxable = allowanceInput.dataset.taxable === "true";
 
     allowances += allowanceValue;
+    queryOutput += "&a"+allowanceCount+"="+allowanceValue;
+    queryOutput += "&ad"+allowanceCount+"="+allowanceInput.dataset.type;
     if (isTaxable) {
       taxableAllowance += allowanceValue;
+      queryOutput += "&at"+allowanceCount+"=1";
     }
+    allowanceCount++;
   });
+  let companyCost = parseFloat(document.getElementById("companyCost").value) || 0;
+  queryOutput += "&c="+companyCost;
   let grossSalary = basicSalary + allowances;
 
   const taxableIncome = basicSalary + taxableAllowance;
-console.log(taxableIncome);
   // Calculate deductions, APIT, etc.
   const epfEmployee = basicSalary * 0.08;
   const epfEmployer = basicSalary * 0.12;
@@ -69,32 +101,133 @@ console.log(taxableIncome);
   // APIT Placeholder (use actual tax rates as needed)
 
   const apit = calculateAPIT(taxableIncome);
-  console.log(apit);
-  const totalDeductions = parseFloat(epfEmployee) + apit;
-  console.log(epfEmployee);
+  const totalDeductions = epfEmployee + apit;
   const netSalary = grossSalary - totalDeductions;
   const totalCostLkr = grossSalary + epfEmployer + etfEmployer;
   // Display results
   const resultsTable = `
-    <table>
-    <tr><th>Base Salary</th><td>${basicSalary.toFixed(2)}</td></tr>
-      <tr><th>Gross Salary</th><td>${grossSalary.toFixed(2)}</td></tr>
-      <tr><th>EPF (Employee)</th><td>${epfEmployee.toFixed(2)}</td></tr>
-      <tr><th>EPF (Employer)</th><td>${epfEmployer.toFixed(2)}</td></tr>
-      <tr><th>ETF (Employer)</th><td>${etfEmployer.toFixed(2)}</td></tr>
-      <tr><th>APIT</th><td>${apit.toFixed(2)}</td></tr>
-      <tr><th>Net Salary</th><td>${netSalary.toFixed(2)}</td></tr>
-      <tr><th>Company Cost</th><td>${totalCostLkr.toFixed(2)}</td></tr>
+  <div class="calc-section w-full p-4 bg-gray-50 rounded-lg shadow-md">
+    <table class="text-sm text-right w-1/3 border-collapse	">
+    <caption class = "text-left">Earnings</caption>
+    <tr><th>Base Salary</th><td>${basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Allowances</th><td>${allowances.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Gross Salary</th><th>${grossSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
+      </table>
+      <hr>
+      <table class="text-sm text-right w-1/3 border-collapse	">
+    <caption class = "text-left">Deductions</caption>
+    <tr><th>EPF (Employee)</th><td>${epfEmployee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>APIT</th><td>${apit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>Total Deductions</th><th>${(apit+epfEmployee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
     </table>
+    <hr>
+     <table class="text-sm text-right w-1/3 border-collapse	">
+    <caption class = "text-left"></caption>
+    <tr><th>Take Home Salary</th><th>${netSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
+    </table>
+
+
+
+     Gross Salary
+         <div class="divGross"></div>
+         <canvas id="chartGross" style="width:100%;max-width:600px"></canvas>*/
+
+    </div>
+    <div class="calc-section w-full p-4 bg-gray-50 rounded-lg shadow-md">
+    <hr>
+    <table class="text-sm text-right w-1/3">
+    <tr><th>Base Salary</th><td>${basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Allowances</th><td>${allowances.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>EPF (Employer)</th><td>${epfEmployer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>ETF (Employer)</th><td>${etfEmployer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Company Cost</th><th>${totalCostLkr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
+
+    </table>
+    Company Cost
+         <div class="divCompanyCost"></div>
+         <canvas id="chartCompanyCost" style="width:100%;max-width:600px"></canvas>
+    </div>
+    <div class="calc-section w-full p-4 bg-gray-50 rounded-lg shadow-md">
+    <hr>
+    <table class="x-small text-right w-1/3">
+     <tr><th>Base Salary</th><td>${basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>Allowances</th><td>${allowances.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>Deductions</th><td></td></tr>
+    <tr><th>EPF (Employee)</th><td>${epfEmployee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>APIT</th><td>${apit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+    <tr><th>Take Home Salary</th><th>${netSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
+     
+    </table>
+     Take Home Salary
+         <div class="divTakeHome"></div>
+         <canvas id="chartTakeHome" style="width:100%;max-width:600px"></canvas>
+    </div>
+    <div class="calc-section w-full p-4 bg-gray-50 rounded-lg shadow-md">
+    <hr>
+    <table class="x-small text-right w-1/3">
+    <tr><th>Base Salary</th><td>${basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Gross Salary</th><td>${grossSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>EPF (Employee)</th><td>${epfEmployee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>EPF (Employer)</th><td>${epfEmployer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>ETF (Employer)</th><td>${etfEmployer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>APIT</th><td>${apit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Net Salary</th><td>${netSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+      <tr><th>Company Cost</th><th>${totalCostLkr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th></tr>
+
+    </table>
+     <input type="hidden" value="${window.location.href.split('?')[0]}${queryOutput}" id="shareURL">
+    <button class="btn-copy mt-2 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200" onclick="copyURL()">Copy Share URL</button>
+ 
+    </div>
+     
+        
+        
+     
   `;
   document.getElementById("results").innerHTML = resultsTable;
+console.log(totalCostLkr);
+  const divCompanyCost = document.querySelector('.divCompanyCost');
+  const chartCompanyCost = document.querySelector('.chartCompanyCost');
+  setGradient(divCompanyCost,"chartCompanyCost", [
+    {v:'basic', color: 'rgb(239, 71, 111)', percentage: basicSalary*100/totalCostLkr },
+    {v:'allowances', color: 'rgb(255, 209, 102)', percentage: allowances*100/totalCostLkr },
+   // { color: 'rgb(6, 214, 160)', percentage: epfEmployee*100/totalCostLkr },
+    {v:'employer contributions', color: 'rgb(7, 59, 76)', percentage: (epfEmployer+etfEmployer)*100/totalCostLkr },
+   // { color: 'rgb(7, 59, 76)', percentage: apit*100/totalCostLkr }
+  ]);
+
+  const divGross = document.querySelector('.divGross');
+  const chartGross = document.querySelector('.chartGross');
+  setGradient(divGross,"chartGross", [
+    {v:'basic', color: 'rgb(239, 71, 111)', percentage: basicSalary*100/totalCostLkr },
+    {v:'allowances', color: 'rgb(255, 209, 102)', percentage: allowances*100/totalCostLkr },
+   // { color: 'rgb(6, 214, 160)', percentage: epfEmployee*100/totalCostLkr },
+    {v:'employer contributions', color: 'rgb(255, 255, 255)', percentage: (epfEmployer+etfEmployer)*100/totalCostLkr },
+   // { color: 'rgb(7, 59, 76)', percentage: apit*100/totalCostLkr }
+  ]);
+ const divTakeHome = document.querySelector('.divTakeHome');
+ const chartTakeHome = document.querySelector('.chartTakeHome');
+  setGradient(divTakeHome,"chartTakeHome", [
+    { v:'basic',color: 'rgb(239, 71, 111)', percentage: ((basicSalary-apit-epfEmployee)*100)/totalCostLkr },
+    {v:'allowances', color: 'rgb(255, 209, 102)', percentage:(allowances*100)/totalCostLkr },
+   { v:'epf',color: 'rgb(6, 214, 160)', percentage: ((epfEmployee) *100)/totalCostLkr },
+    {v:'APIT',color: 'rgb(17, 138, 178)', percentage: apit*100/totalCostLkr },
+   { v:'employer contributions',color: 'rgb(255, 255, 255)', percentage: ((epfEmployer+etfEmployer)*100)/totalCostLkr },
+
+  ]);
+}
+
+function copyURL(){
+  const shareURL = document.getElementById("shareURL");
+  navigator.clipboard.writeText(shareURL.value);
+  alert("URL copied to clipboard");
 }
 
 // Function to reverse calculate the company cost
 function reverseCalculate() {
-  const companyCost = parseFloat(document.getElementById("companyCost").value);
-  const usdAmount = parseFloat(document.getElementById("usdAmount").value);
-  const lkrRate = parseFloat(document.getElementById("lkrRate").value);
+  const companyCost = parseFloat(document.getElementById("companyCost").value)||0;
+  const usdAmount = parseFloat(document.getElementById("usdAmount").value)||0;
+  const lkrRate = parseFloat(document.getElementById("lkrRate").value)||300;
 
   // Calculate reverse cost breakdown
   const lkrFromUsd = usdAmount * lkrRate;
@@ -120,6 +253,7 @@ function reverseCalculate() {
        <tr><th>Net Salary</th><td>${netSalary.toFixed(2)}</td></tr>
       <tr><th>Company Cost</th><td>${companyCost.toFixed(2)}</td></tr>
     </table>
+    <button class="btn-copy mt-2 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200" onclick="fillResults(${companyCost.toFixed(2)})">Fill</button>
   `;
   document.getElementById("results").innerHTML = reverseResultsTable;
   const results = {
@@ -135,8 +269,39 @@ function reverseCalculate() {
 
   displayResults(results);
 }
+
+function fillResults(companyCost){
+  if(companyCost!==undefined){
+    var basicSalary = document.getElementById("basicSalary");
+    var costToBasicRatio = document.getElementById("costToBasicRatio").value || 0.6125;
+    //formatNumber(Math.round(companyCost*costToBasicRatio/100)*100);
+    document.getElementById("basicSalaryDisplay").value = Math.round(companyCost*costToBasicRatio/100)*100;
+    //basicSalary.value = Math.round(companyCost*costToBasicRatio/100)*100;
+    document.querySelectorAll('.allowance-group').forEach(e => e.remove());
+
+    addInternetAllowance();
+    addPeggedAllowance();
+ }
+
+}
+function addPeggedAllowance(){
+  var basicSalary = document.getElementById("basicSalary").value||0;
+  var lkrFromUsd = document.getElementById("lkrRate").value||200;
+  let baseRate = parseFloat(document.getElementById("baseRate").value) ||200;
+ var peggedAllowance = basicSalary*((lkrFromUsd-baseRate)/baseRate);
+ peggedAllowance= (peggedAllowance < 0? 0: peggedAllowance); 
+  addAllowance(peggedAllowance.toFixed(0), true,"p");
+}
+
+function addInternetAllowance(){
+  let internetAllowance = document.getElementById("internetAllowance").value||0;
+  let taxableAllowance = internetAllowance/2;
+  addAllowance(taxableAllowance.toFixed(0), true, "i");
+  addAllowance(taxableAllowance.toFixed(0), false,"i");
+}
+
 // Function to add an allowance input
-function addAllowance() {
+function addAllowance(allowance = 0, taxable = false, type = 'a') {
   const allowancesSection = document.getElementById("allowances-section");
   const allowanceGroup = document.createElement("div");
   allowanceGroup.className = "allowance-group";
@@ -147,6 +312,8 @@ function addAllowance() {
   allowanceInput.className = "allowance";
   allowanceInput.placeholder = "Enter Allowance";
   allowanceInput.dataset.taxable = "false";
+  allowanceInput.dataset.type = type;
+  allowanceInput.value = allowance;
 
   // Taxable checkbox
   const taxableLabel = document.createElement("label");
@@ -154,6 +321,10 @@ function addAllowance() {
   const taxableCheckbox = document.createElement("input");
   taxableCheckbox.type = "checkbox";
   taxableCheckbox.className = "taxable-checkbox";
+  if(taxable){
+    taxableCheckbox.checked = true;
+    allowanceInput.dataset.taxable = "true";
+  }
   taxableCheckbox.addEventListener("change", function () {
     allowanceInput.dataset.taxable = this.checked ? "true" : "false";
   });
@@ -186,4 +357,155 @@ function displayResults(results) {
         `;
     resultsContent.appendChild(tile);
   }
+}
+
+// Function to get query parameters as an object
+function getQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  const queryObj = {};
+  for (const [key, value] of params.entries()) {
+      queryObj[key] = value;
+  }
+  return queryObj;
+}
+
+// Function to populate textboxes dynamically
+function populateTextboxes() {
+  const queryParams = getQueryParams();
+      if(queryParams.b!==undefined){
+         var basicSalary = document.getElementById("basicSalary");
+         basicSalary.value = queryParams.b;
+      }
+      if(queryParams.a1!==undefined){
+        if(queryParams.at1!==undefined && queryParams.at1==="1"){
+          addAllowance(queryParams.a1, true,queryParams.ad1);
+        } else {
+          addAllowance(queryParams.a1, false,queryParams.ad1);
+        }
+      }
+      if(queryParams.a2!==undefined){
+        if(queryParams.at2!==undefined && queryParams.at2==="1"){
+          addAllowance(queryParams.a2, true, queryParams.ad2);
+        } else {
+          addAllowance(queryParams.a2, false, queryParams.ad2);
+        }
+      }
+      if(queryParams.a3!==undefined){
+        if(queryParams.at3!==undefined && queryParams.at3==="1"){
+          addAllowance(queryParams.a3, true, queryParams.ad3);
+        } else {
+          addAllowance(queryParams.a3, false, queryParams.ad3);
+        }
+      } 
+      if(queryParams.a4!==undefined){
+        if(queryParams.at4!==undefined && queryParams.at4==="1"){
+          addAllowance(queryParams.a4, true, queryParams.ad4);
+        } else {
+          addAllowance(queryParams.a4, false, queryParams.ad4);
+        }
+      }
+      if(queryParams.a5!==undefined){
+        if(queryParams.at5!==undefined && queryParams.at5==="1"){
+          addAllowance(queryParams.a5, true, queryParams.ad5);
+        } else {
+          addAllowance(queryParams.a5, false, queryParams.ad5);
+        }
+      }
+
+      if(queryParams.c!==undefined){
+        var companyCost = document.getElementById("companyCost");
+        companyCost.value = queryParams.c;
+      }
+      calculate();
+}
+
+// Call the function on page load
+populateTextboxes();
+
+function setGradient(divElement,chartElement, percentages) {
+  console.log(divElement, percentages);
+
+  // Validate that percentages add up to 100
+  const total = percentages.reduce((sum, current) => sum + current.percentage, 0);
+  var diff = total - 100 ;
+  var counter = percentages.length*100;
+  var countDif = diff/counter;
+  console.log(percentages, counter,total);
+  if (total !== 100) {
+      console.log("Percentages must add up to 100%");
+     // return;
+  }
+  console.log(diff/counter);
+  
+
+  console.log(percentages);
+  // Build the gradient string
+  let currentPosition = 0;
+  let gradient = '-webkit-linear-gradient(0deg';
+
+  percentages.forEach(segment => {
+      const nextPosition = currentPosition + segment.percentage + countDif ;
+      gradient += `, ${segment.color} ${currentPosition}%, ${segment.color} ${nextPosition}%`;
+      currentPosition = nextPosition;
+  });
+
+  gradient += ')';
+  console.log(gradient);
+
+  // Apply the gradient as the background-image style
+  divElement.style.backgroundImage = gradient;
+  divElement.style.width = '90%';
+  divElement.style.height = '25px';
+  divElement.style.borderTop = '0px solid';
+  divElement.style.display = 'block';
+  var xValues = percentages.map(x=>x.v);
+  console.log(xValues);
+var yValues = percentages.map(x=>x.percentage);
+console.log(yValues);
+var barColors = percentages.map(x=>x.color);
+
+new Chart(chartElement, {
+  type: "doughnut",
+  data: {
+    labels: xValues,
+    datasets: [{
+      backgroundColor: barColors,
+      data: yValues
+    }]
+  },
+  options: {
+    title: {
+      display: true,
+      text: "Company Cost Breakdown"
+    },
+    plugins: {
+      tooltip: {
+          callbacks: {
+              label: function(tooltipItem) {
+                  const value = tooltipItem.raw;
+                  const total = tooltipItem.chart.data.datasets[tooltipItem.datasetIndex].data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(2);
+                  return `${value} (${percentage}%)`;
+              }
+          }
+      }
+    }
+  }});
+}
+
+function formatNumber(input) {
+  // Remove any non-digit characters (except for the decimal point)
+  let value = input.value.replace(/[^0-9.]/g, '');
+  if (value === '') {
+    value = '0';
+  }
+
+  // Convert to a number and format with commas
+  const formattedValue = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  // Set the formatted value back to the input
+  input.value = formattedValue;
+
+  // Update the hidden input with the raw value (remove commas)
+  document.getElementById("basicSalary").value = value; // Store the raw number without formatting
 }
