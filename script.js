@@ -25,18 +25,16 @@ function ToggleSettings(){
 function calculateAPIT(taxableIncome) {
   let apit = 0;
 
-  if (taxableIncome > 308333) {
-    apit = taxableIncome * 0.36 - 73500;
-  } else if (taxableIncome > 266667) {
-    apit = taxableIncome * 0.3 - 55000;
-  } else if (taxableIncome > 225000) {
-    apit = taxableIncome * 0.24 - 39000;
-  } else if (taxableIncome > 183333) {
-    apit = taxableIncome * 0.18 - 25500;
-  } else if (taxableIncome > 141667) {
-    apit = taxableIncome * 0.12 - 14500;
-  } else if (taxableIncome > 100000) {
-    apit = taxableIncome * 0.06 - 6000;
+  if (taxableIncome > 358333) {
+    apit = taxableIncome * 0.36 - 94000;
+  } else if (taxableIncome > 316667) {
+    apit = taxableIncome * 0.3 - 72500;
+  } else if (taxableIncome > 275000) {
+    apit = taxableIncome * 0.24 - 53500;
+  } else if (taxableIncome > 233333) {
+    apit = taxableIncome * 0.18 - 37000;
+  } else if (taxableIncome > 150000) {
+    apit = taxableIncome * 0.06 - 9000;
   }
 
   return apit;
